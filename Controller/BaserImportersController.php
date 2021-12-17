@@ -77,65 +77,45 @@ class BaserImportersController extends AppController {
  */
 	public function admin_index() {
 		if($this->request->data) {
-			// if(empty($this->request->data['WpImporter']['file']['tmp_name'])) {
-			// 	$this->setMessage('ファイルのアップロードに失敗しました。', true);
-			// } else {
 				$blogContentId = $this->request->data['BaserImporter']['blog_content_id'];
 				$clearData = $this->request->data['BaserImporter']['clear_data'];
-
-				// $name = $this->request->data['BaserImporter']['file']['name'];
-				// move_uploaded_file($this->request->data['BaserImporter']['file']['tmp_name'], TMP . $name);
 
 				if ($this->blog_import($blogContentId, $clearData)) {
 					$this->setMessage('ファイルの読み込みに成功しました。');
 				} else {
 					$this->setMessage('ファイルの読み込みに失敗しました。', true);
 				}
-			// }
 		}
 
-		if (intval(getVersion()) < 4) {
-			// baserCMS3系までの対応
-			$blogContents = $this->BlogContent->find('list', array(
-				'fields' => array(
-					'id', 'title',
+		$contents = $this->Content->find('all', array(
+			'conditions' => array(
+				'Content.plugin' => 'Blog',
+				'Content.type' => 'BlogContent',
+				'OR' => array(
+					array('Content.alias_id' => ''),
+					array('Content.alias_id' => NULL),
 				),
-				'order' => array(
-					'BlogContent.id'
-				),
-				'recursive' => -1,
-			));
-		} else {
-			// baserCMS4系対応
-			$contents = $this->Content->find('all', array(
-				'conditions' => array(
-					'Content.plugin' => 'Blog',
-					'Content.type' => 'BlogContent',
-					'OR' => array(
-						array('Content.alias_id' => ''),
-						array('Content.alias_id' => NULL),
-					),
-				),
-				'order' => array(
-					'Content.entity_id'
-				),
-			));
-			// 名サイトとサブサイトで同じ名称のブログが有る可能性があるので、
-			// プルダウンにサイト名を付加
-			foreach($contents as $content) {
-				if ($content['Site']['id']) {
-					$siteName = $content['Site']['name'];
-				} else {
-					$bcSite = Configure::read('BcSite');
-					$siteName = $bcSite['main_site_display_name'];
-				}
-				$blogContents[$content['Content']['entity_id']] = sprintf(
-					'%s : %s',
-					$siteName,
-					$content['Content']['title']
-				);
+			),
+			'order' => array(
+				'Content.entity_id'
+			),
+		));
+		// 名サイトとサブサイトで同じ名称のブログが有る可能性があるので、
+		// プルダウンにサイト名を付加
+		foreach($contents as $content) {
+			if ($content['Site']['id']) {
+				$siteName = $content['Site']['name'];
+			} else {
+				$bcSite = Configure::read('BcSite');
+				$siteName = $bcSite['main_site_display_name'];
 			}
+			$blogContents[$content['Content']['entity_id']] = sprintf(
+				'%s : %s',
+				$siteName,
+				$content['Content']['title']
+			);
 		}
+
 		$this->set('blogContents', $blogContents);
 
 	}
@@ -223,16 +203,19 @@ class BaserImportersController extends AppController {
 			// ブログエンティティID 置換
 			$blogPosts[$key]['blog_content_id'] = $blogContents[$blogPost['blog_content_id']];
 
+			// BurgerEditorを使っている場合は1カラムテキストに入れる。
+			$contentsPrefix = Configure::read('burgerEditor') ? '<div data-bgb="wysiwyg" class="bgb-wysiwyg"><div data-bgt="ckeditor" data-bgt-ver="2.1.0" class="bgt-container bgt-ckeditor-container show"><div class="bge-ckeditor" data-bge="ckeditor">' : '';
+			$contentsSafix = Configure::read('burgerEditor') ? '</div></div></div>' : '';
+
 			// 記事詳細にコンテンツを集める
-			$blogPosts[$key]['detail'] = '<div data-bgb="wysiwyg" class="bgb-wysiwyg"><div data-bgt="ckeditor" data-bgt-ver="2.1.0" class="bgt-container bgt-ckeditor-container show"><div class="bge-ckeditor" data-bge="ckeditor">';
-			$blogPosts[$key]['detail'] .= $blogPost['content'];
-			$blogPosts[$key]['detail'] .= '</div></div></div>';
-			if ($blogPost['detail']) {
-				$blogPosts[$key]['detail'] .= '<div data-bgb="wysiwyg" class="bgb-wysiwyg"><div data-bgt="ckeditor" data-bgt-ver="2.1.0" class="bgt-container bgt-ckeditor-container show"><div class="bge-ckeditor" data-bge="ckeditor">';
-				$blogPosts[$key]['detail'] .= $blogPost['detail'];
-				$blogPosts[$key]['detail'] .= '</div></div></div>';
+			if (Configure::read('contentsUse') == false) {
+				$blogPosts[$key]['detail'] = $contentsPrefix. $blogPost['content']. $contentsSafix;
+				$blogPosts[$key]['detail'] .= $contentsPrefix. $blogPost['detail']. $contentsSafix;
+				$blogPosts[$key]['content'] = '';
+			} else {
+				$blogPosts[$key]['content'] = $blogPost['content'];
+				$blogPosts[$key]['detail'] = $blogPost['detail'] ? $contentsPrefix. $blogPost['detail']. $contentsSafix : '';
 			}
-			$blogPosts[$key]['content'] = '';
 
 			// 保存処理
 			$this->BlogPost->create();

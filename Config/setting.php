@@ -43,5 +43,13 @@ $config['BaserImporterCategory'] = array(
 	),
 	'tag' => array(),
 );
+
 // 記事idの開始値（これより大きいIDが存在する場合、上書きされる可能性があります。）
 $config['startId'] = 100;
+
+// 旧サイトで記事概要を使っていて、新サイトで概要を使用しない場合は falseにする。
+$config['contentsUse'] = true;
+
+
+// 旧サイトでBurgerEditorを使っておらず、新サイトでBurgerEditorを使用する場合は trueにする。
+$config['burgerEditor'] = true;
