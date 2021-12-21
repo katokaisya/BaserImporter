@@ -22,7 +22,8 @@ $config['mysite_blog_posts_blog_tags'] = ${$prefix.'blog_posts_blog_tags'};
 
 // 旧BlogContentId => 新BlogContentId
 $config['importBlogContent'] = [
-	1 => 2,
+	1 => 1,
+	2 => 2,
 ];
 
 // 旧UserId => 新UserId
@@ -30,22 +31,15 @@ $config['Users'] = [];
 
 // 旧BlogCategoryId => 新BlogCategoryId
 $config['importBlogCategory'] = [
-	1 => 6,
-
+	1 => 2,
 ];
 // 旧BlogTagId => 新BlogTagId
-$config['importBlogTag'] = [];
-
-
-$config['BaserImporterCategory'] = array(
-	'category' => array(
-		'お知らせ' => 'トピックス',
-	),
-	'tag' => array(),
-);
+$config['importBlogTag'] = [
+	1 => 2
+];
 
 // 記事idの開始値（これより大きいIDが存在する場合、上書きされる可能性があります。）
-$config['startId'] = 100;
+$config['startId'] = 10;
 
 // 旧サイトで記事概要を使っていて、新サイトで概要を使用しない場合は falseにする。
 $config['contentsUse'] = true;

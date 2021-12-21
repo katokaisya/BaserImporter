@@ -180,13 +180,23 @@ class BaserImportersController extends AppController {
 		$blogPostsBlogTags = Configure::read('mysite_blog_posts_blog_tags');
 		$blogContents = Configure::read('importBlogContent');
 		$blogCategory = Configure::read('importBlogCategory');
+		$importBlogTag = Configure::read('importBlogTag');
+		$startId = Configure::read('startId');
+		$importBlogContent = Configure::read('importBlogContent');
 		$users = Configure::read('Users');
 		$redirect = [];
 		foreach ($blogPosts as $key => $blogPost) {
-			$blogPosts[$key]['id'] += Configure::read('startId');
+			if ($startId) {
+				$blogPosts[$key]['id'] += $startId;
+			}
+			// 記事のNOを設定
+			$blogPosts[$key]['no'] = $this->BlogPost->getMax('no', array(
+				'BlogPost.blog_content_id' => $blogContentId)
+			) + 1;
+
 			switch ($blogPost['blog_content_id']) {
 				case '1':
-					$redirect[$key] = 'RewriteRule ^news/archives/'. $blogPost['no']. ' /joho/news/archives/'. $blogPost['no']. ' [R=302,L]';
+					$redirect[$key] = 'RewriteRule ^baser/news/archives/'. $blogPost['no']. ' /baser/archives/'. $blogPost['no']. ' [R=302,L]';
 					break;
 				default:
 					break;
@@ -201,8 +211,11 @@ class BaserImportersController extends AppController {
 				$blogPosts[$key]['user_id'] = $users[$blogPost['user_id']];
 			}
 			// ブログエンティティID 置換
-			$blogPosts[$key]['blog_content_id'] = $blogContents[$blogPost['blog_content_id']];
-
+			if (array_key_exists($blogContentId, $importBlogContent)) {
+				$blogPosts[$key]['blog_content_id'] = $importBlogContent[$blogContentId];
+			} else {
+				$blogPosts[$key]['blog_content_id'] = $blogContentId;
+			}
 			// BurgerEditorを使っている場合は1カラムテキストに入れる。
 			$contentsPrefix = Configure::read('burgerEditor') ? '<div data-bgb="wysiwyg" class="bgb-wysiwyg"><div data-bgt="ckeditor" data-bgt-ver="2.1.0" class="bgt-container bgt-ckeditor-container show"><div class="bge-ckeditor" data-bge="ckeditor">' : '';
 			$contentsSafix = Configure::read('burgerEditor') ? '</div></div></div>' : '';
@@ -226,8 +239,8 @@ class BaserImportersController extends AppController {
 		// タグの付け直し
 		if (!empty($blogPostsBlogTags)) {
 			foreach ($blogPostsBlogTags as $i => $blogPostsBlogTag) {
-				$blogPostsBlogTags[$i]['blog_post_id'] += Configure::read('startId');
-				$blogPostsBlogTags[$i]['blog_tag_id'] += 100;
+				$blogPostsBlogTags[$i]['blog_post_id'] += $startId;
+				$blogPostsBlogTags[$i]['blog_tag_id'] = $importBlogTag[$blogPostsBlogTags[$i]['blog_tag_id']];
 				$this->BlogPostsBlogTag->create();
 				$ret = $this->BlogPostsBlogTag->saveAll($blogPostsBlogTags[$i], array('callbacks' => false));
 			}

@@ -1,4 +1,4 @@
-<h4>Wordpress XML インポート</h4>
+<h4>baserCMS ブログ記事 インポート</h4>
 
 
 <?php echo $this->BcForm->create('BaserImporter', array('type' => 'file')) ?>
